@@ -1,9 +1,10 @@
 # Applog
 
-Applog formats logrus output for Google AppEngine:
+Applog formats [logrus](https://github.com/sirupsen/logrus) output for Google AppEngine:
 - Errors are sent to Google Error Reporting with a stacktrace
 - Code calling location is formatted with file, line and module
 - Trace ID provided in the context is logged appropriately
+
 
 ```go 
 import (
