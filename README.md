@@ -5,7 +5,7 @@ Applog formats [logrus](https://github.com/sirupsen/logrus) output for Google Ap
 - Code calling location is formatted with file, line and module
 - Trace ID provided in the context is logged appropriately
 
-## Basic Usage
+### Basic Usage
 
 ```go 
 import (
