@@ -6,43 +6,34 @@ Applog formats [logrus](https://github.com/sirupsen/logrus) output for Google Ap
 - Trace ID provided in the context is logged appropriately
 
 ## Basic Usage
+
 ```go 
 import (
-	"context"
-	"os"
-
 	"github.com/ezachrisen/applog"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-
 	logrus.SetFormatter(&applog.Formatter{})
 	logrus.Info("Hello")
-   // Output: {"message":"Hello","severity":"info"}
+	// Output: {"message":"Hello","severity":"info"}
 }
 ```
 
 ### TraceID in Context
-```
+
+```go
 
 func main() {
 	type ContextKey string
 	key := ContextKey("traceid")
 
 	logrus.SetFormatter(&applog.Formatter{TraceKey: key})
-
 	ctx := context.WithValue(context.Background(), key, "abcdef123456")
-
 	logrus.WithContext(ctx).Infof("My info here %d", 100)
 
 	// Output:
 	// {"message":"My info here 100","severity":"info","logging.googleapis.com/trace":"abcdef123456"}
 }
-
-
-
-
-
-See the example for additional usage. 
+```
 
