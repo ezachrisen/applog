@@ -13,13 +13,12 @@ type Formatter struct {
 }
 
 type googleLogEntry struct {
-	Message        string                 `json:"message"`
-	Severity       string                 `json:"severity"`
-	Additional     logrus.Fields          `json:"additional_info,omitempty"`
-	More           map[string]interface{} `json:"additional_infox,omitempty"`
-	TraceID        string                 `json:"logging.googleapis.com/trace,omitempty"`
-	Type           string                 `json:"@type,omitempty"`
-	SourceLocation *sourceLocation        `json:"logging.googleapis.com/sourceLocation,omitempty"`
+	Message        string          `json:"message"`
+	Severity       string          `json:"severity"`
+	Additional     logrus.Fields   `json:"additional_info,omitempty"`
+	TraceID        string          `json:"logging.googleapis.com/trace,omitempty"`
+	Type           string          `json:"@type,omitempty"`
+	SourceLocation *sourceLocation `json:"logging.googleapis.com/sourceLocation,omitempty"`
 }
 
 type sourceLocation struct {
