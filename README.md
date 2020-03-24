@@ -37,3 +37,14 @@ func main() {
 }
 ```
 
+### Benchmarks
+Most operations are very fast, even obtaining the source-code calling location. Note that getting a full stack trace is quite expensive. 
+
+See the benchmark_test.go file for specifics. 
+
+```
+BenchmarkBasic-8             	 1463979	       809 ns/op
+BenchmarkBasicWithCaller-8   	  325903	      3713 ns/op
+BenchmarkStructured-8        	  489372	      2505 ns/op
+BenchmarkError-8             	   49635	     23598 ns/op
+```

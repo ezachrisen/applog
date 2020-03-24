@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"runtime"
 	"strings"
 	"testing"
@@ -33,6 +32,7 @@ func TestBasicLog(t *testing.T) {
 	// Get the current source code line and step back 3 to get the line where the logging happened
 	logLine := currentLine() - 3
 
+	// Convert the log output back into a googleLogEntry struct
 	e := outputToGoogleLogEntry(buf, t)
 
 	if e.Message != "My message" {
@@ -157,48 +157,6 @@ func TestNoCaller(t *testing.T) {
 		t.Errorf("Wanted SourceLocation = nil, got %+v", e.SourceLocation)
 	}
 
-}
-
-func BenchmarkGlogrBasic(b *testing.B) {
-	logrus.SetOutput(ioutil.Discard)
-	logrus.SetFormatter(&Formatter{TraceKey: "ABC"})
-	logrus.SetReportCaller(false)
-	for i := 0; i < b.N; i++ {
-		logrus.Info("My info message here")
-	}
-}
-
-func BenchmarkGlogrBasicWithCaller(b *testing.B) {
-	logrus.SetOutput(ioutil.Discard)
-	logrus.SetFormatter(&Formatter{TraceKey: "ABC"})
-	logrus.SetReportCaller(true)
-
-	for i := 0; i < b.N; i++ {
-		logrus.Info("My info message here")
-	}
-}
-
-func BenchmarkGlogrStructured(b *testing.B) {
-	logrus.SetOutput(ioutil.Discard)
-	logrus.SetFormatter(&Formatter{TraceKey: "ABC"})
-	logrus.SetReportCaller(false)
-
-	for i := 0; i < b.N; i++ {
-		logrus.WithFields(logrus.Fields{
-			"animal": "walrus",
-			"name":   "jonas",
-			"age":    33,
-		}).Info("My info message here")
-	}
-}
-
-func BenchmarkGlogrError(b *testing.B) {
-	logrus.SetOutput(ioutil.Discard)
-	logrus.SetFormatter(&Formatter{TraceKey: "ABC"})
-
-	for i := 0; i < b.N; i++ {
-		logrus.Error("My error message here")
-	}
 }
 
 // Convert a logged JSON string to a Google Log Entry struct
