@@ -2,14 +2,28 @@ package applog
 
 import (
 	"encoding/json"
+	"fmt"
 	"path"
 	"runtime/debug"
+
+	"go.opencensus.io/trace"
 
 	"github.com/sirupsen/logrus"
 )
 
-type Formatter struct {
-	TraceKey interface{}
+const (
+	// gcpTraceHeaderKey = "gcp-bin-trace"
+	// grpcHeader        = "grpc-trace-bin"
+	requestMethod = "requestMethod"
+	requestUrl    = "requestUrl"
+	latency       = "latency"
+	grpcCode      = "grpcCode"
+	grpcMessage   = "grpcMessage"
+	grpcDetails   = "grpcDetails"
+)
+
+type GRPCFormatter struct {
+	ProjectID string
 }
 
 type googleLogEntry struct {
@@ -19,8 +33,40 @@ type googleLogEntry struct {
 	TraceID        string          `json:"logging.googleapis.com/trace,omitempty"`
 	Type           string          `json:"@type,omitempty"`
 	SourceLocation *sourceLocation `json:"logging.googleapis.com/sourceLocation,omitempty"`
+	HttpRequest    HttpRequest     `json:"httpRequest,omitempty"`
+	GRPCStatus     GRPCStatus      `json:"grpc,omitempty"`
 }
 
+// Log this so Cloud Logging will parse it and display the information on the header line
+type HttpRequest struct {
+	RequestMethod string `json:"requestMethod,omitempty"`
+	RequestUrl    string `json:"requestUrl,omitempty"`
+	Latency       string `json:"latency,omitempty"`
+}
+
+type GRPCStatus struct {
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+	Details string `json:"details,omitempty"`
+}
+
+// {
+// 	"requestMethod": string,
+// 	"requestUrl": string,
+// 	"requestSize": string,
+// 	"status": integer,
+// 	"responseSize": string,
+// 	"userAgent": string,
+// 	"remoteIp": string,
+// 	"serverIp": string,
+// 	"referer": string,
+// 	"latency": string,
+// 	"cacheLookup": boolean,
+// 	"cacheHit": boolean,
+// 	"cacheValidatedWithOriginServer": boolean,
+// 	"cacheFillBytes": string,
+// 	"protocol": string
+//   }
 type sourceLocation struct {
 	File     string `json:"file,omitempty"`
 	Line     int    `json:"line,omitempty"`
@@ -31,12 +77,10 @@ const errorType = "type.googleapis.com/google.devtools.clouderrorreporting.v1bet
 
 // Format logrus output per Google Cloud guidelines.
 // See https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry for details.
-// Tested with Google App Engine
-//
-// To have traceIDs logged, supply a key in the TraceKey field, and call logrus.WithContext(...)
 //
 // See the examples for usage.
-func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *GRPCFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+
 	e := googleLogEntry{
 		Message:    entry.Message,
 		Severity:   entry.Level.String(),
@@ -57,9 +101,30 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	if entry.Context != nil {
-		if traceid, ok := entry.Context.Value(f.TraceKey).(string); ok {
-			e.TraceID = traceid
+		span := trace.FromContext(entry.Context)
+		if span != nil {
+			e.TraceID = fmt.Sprintf("projects/%s/traces/%v", f.ProjectID, span.SpanContext().TraceID)
 		}
+	}
+
+	if entry.Data != nil {
+		//		fmt.Printf("entry.Data (%s) = %v\n", e.TraceID, entry.Data)
+		if requestMethod, ok := entry.Data[requestMethod]; ok && requestMethod != "" {
+			e.HttpRequest = HttpRequest{
+				RequestMethod: fmt.Sprintf("%v", requestMethod),
+				RequestUrl:    fmt.Sprintf("%v", entry.Data[requestUrl]),
+				Latency:       fmt.Sprintf("%s", entry.Data[latency]),
+			}
+		}
+
+		if code, ok := entry.Data[grpcCode]; ok && code != "" {
+			e.GRPCStatus = GRPCStatus{
+				Code:    fmt.Sprintf("%v", code),
+				Message: fmt.Sprintf("%s", entry.Data[grpcMessage]),
+				Details: fmt.Sprintf("%v", entry.Data[grpcDetails]),
+			}
+		}
+		e.Additional = entry.Data
 	}
 
 	serialized, err := json.Marshal(e)
